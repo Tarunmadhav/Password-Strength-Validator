@@ -1,5 +1,6 @@
 package com.tarun.passwordvalidator.service.impl;
 
+import com.tarun.passwordvalidator.exception.InvalidPasswordInputException;
 import com.tarun.passwordvalidator.model.PasswordReport;
 import com.tarun.passwordvalidator.model.PasswordReport.StrengthLevel;
 import com.tarun.passwordvalidator.service.PasswordService;
@@ -10,120 +11,124 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Service implementation for password validation and scoring.
+ * Service implementation for password validation.
+ * <p>
+ * IoC/DI Wiring (for interview reference):
+ * - This class is annotated with @Service, making it a Spring bean.
+ * - The PasswordValidator is constructor-injected (see constructor below).
+ * - Spring's dependency injection container will automatically provide an instance of PasswordValidator
+ *   when creating an instance of PasswordServiceImpl.
+ * - This follows constructor injection best practice, ensuring immutability and testability.
  */
 @Service
 public class PasswordServiceImpl implements PasswordService {
 
-    // Weights for different criteria (must sum to 100)
-    private static final int LENGTH_WEIGHT = 15;
-    private static final int UPPERCASE_WEIGHT = 10;
-    private static final int LOWERCASE_WEIGHT = 10;
-    private static final int DIGIT_WEIGHT = 10;
-    private static final int SPECIAL_CHAR_WEIGHT = 15;
-    private static final int NO_USERNAME_WEIGHT = 10;
-    private static final int NOT_COMMON_WEIGHT = 10;
-    private static final int NO_REPEATED_CHARS_WEIGHT = 10;
-    private static final int NO_SEQUENTIAL_CHARS_WEIGHT = 10;
+    private final PasswordValidator passwordValidator;
 
-    private final PasswordValidator validator;
-
-    public PasswordServiceImpl(PasswordValidator validator) {
-        this.validator = validator;
+    public PasswordServiceImpl(PasswordValidator passwordValidator) {
+        this.passwordValidator = passwordValidator;
     }
 
     @Override
     public PasswordReport validate(String password, String username) {
-        if (password == null) {
-            password = "";
+        // Validate input (blank check) - this could also be done via DTO validation, but we do it here for clarity
+        if (password == null || password.isBlank()) {
+            throw new InvalidPasswordInputException("Password cannot be blank");
+        }
+        if (username == null || username.isBlank()) {
+            throw new InvalidPasswordInputException("Username cannot be blank");
         }
 
+        List<String> suggestions = new ArrayList<>();
         int score = 0;
-        List<String> suggestions = new ArrayList<String>();
 
-        // Check length (minimum 8 chars, but longer is better)
-        int length = password.length();
-        if (length >= 8) {
-            score += LENGTH_WEIGHT;
-            // Bonus for longer passwords (up to extra 10 points for 16+ chars)
-            if (length >= 16) {
-                score += 10; // bonus
-            } else if (length >= 12) {
-                score += 5; // smaller bonus
-            } else {
-                suggestions.add("Consider using a longer password (12+ characters for better security)");
-            }
+        // Length check (base points: up to 30 for length >=8, plus bonus)
+        String lengthSuggestion = passwordValidator.validateLength(password);
+        if (lengthSuggestion == null) {
+            score += 30; // base length score for >=8
+            // Bonus for length >=12 and >=16
+            score += passwordValidator.lengthBonus(password);
         } else {
-            suggestions.add("Password must be at least 8 characters long");
+            suggestions.add(lengthSuggestion);
         }
 
-        // Check uppercase
-        if (validator.hasUppercase(password)) {
-            score += UPPERCASE_WEIGHT;
+        // Uppercase
+        String upperSuggestion = passwordValidator.validateUppercase(password);
+        if (upperSuggestion == null) {
+            score += 15;
         } else {
-            suggestions.add("Add at least one uppercase letter");
+            suggestions.add(upperSuggestion);
         }
 
-        // Check lowercase
-        if (validator.hasLowercase(password)) {
-            score += LOWERCASE_WEIGHT;
+        // Lowercase
+        String lowerSuggestion = passwordValidator.validateLowercase(password);
+        if (lowerSuggestion == null) {
+            score += 15;
         } else {
-            suggestions.add("Add at least one lowercase letter");
+            suggestions.add(lowerSuggestion);
         }
 
-        // Check digit
-        if (validator.hasDigit(password)) {
-            score += DIGIT_WEIGHT;
+        // Digit
+        String digitSuggestion = passwordValidator.validateDigit(password);
+        if (digitSuggestion == null) {
+            score += 15;
         } else {
-            suggestions.add("Add at least one digit");
+            suggestions.add(digitSuggestion);
         }
 
-        // Check special character
-        if (validator.hasSpecialChar(password)) {
-            score += SPECIAL_CHAR_WEIGHT;
+        // Special character
+        String specialSuggestion = passwordValidator.validateSpecialChar(password);
+        if (specialSuggestion == null) {
+            score += 15;
         } else {
-            suggestions.add("Add at least one special character (e.g., !@#$%^&*)");
+            suggestions.add(specialSuggestion);
         }
 
-        // Check username not in password
-        if (username == null || username.isEmpty() || !validator.containsUsername(password, username)) {
-            score += NO_USERNAME_WEIGHT;
+        // Common password
+        String commonSuggestion = passwordValidator.validateCommonPassword(password);
+        if (commonSuggestion == null) {
+            score += 10; // bonus for not being common
         } else {
-            suggestions.add("Do not include your username in your password");
+            suggestions.add(commonSuggestion);
         }
 
-        // Check not common password
-        if (!validator.isCommonPassword(password)) {
-            score += NOT_COMMON_WEIGHT;
+        // Repeated chars
+        String repeatSuggestion = passwordValidator.validateRepeatedChars(password);
+        if (repeatSuggestion == null) {
+            score += 10; // bonus for no repeats
         } else {
-            suggestions.add("Choose a less common password");
+            suggestions.add(repeatSuggestion);
         }
 
-        // Check no repeated characters (3+ identical in a row)
-        if (!validator.hasRepeatedChars(password)) {
-            score += NO_REPEATED_CHARS_WEIGHT;
+        // Sequential chars
+        String seqSuggestion = passwordValidator.validateSequentialChars(password);
+        if (seqSuggestion == null) {
+            score += 5; // bonus for no sequences
         } else {
-            suggestions.add("Avoid repeating the same character 3+ times in a row");
+            suggestions.add(seqSuggestion);
         }
 
-        // Check no sequential characters (3+ consecutive like abc or 123)
-        if (!validator.hasSequentialChars(password)) {
-            score += NO_SEQUENTIAL_CHARS_WEIGHT;
+        // Username similarity
+        String userSuggestion = passwordValidator.validateUsernameSimilarity(password, username);
+        if (userSuggestion == null) {
+            score += 5; // bonus for username uniqueness
         } else {
-            suggestions.add("Avoid sequential characters (like abc or 123) 3+ in a row");
+            suggestions.add(userSuggestion);
         }
 
         // Cap score at 100
-        score = Math.min(score, 100);
+        if (score > 100) {
+            score = 100;
+        }
 
         // Determine strength level
-        PasswordReport.StrengthLevel strengthLevel;
+        StrengthLevel strengthLevel;
         if (score >= 80) {
-            strengthLevel = PasswordReport.StrengthLevel.STRONG;
+            strengthLevel = StrengthLevel.STRONG;
         } else if (score >= 60) {
-            strengthLevel = PasswordReport.StrengthLevel.MEDIUM;
+            strengthLevel = StrengthLevel.MEDIUM;
         } else {
-            strengthLevel = PasswordReport.StrengthLevel.WEAK;
+            strengthLevel = StrengthLevel.WEAK;
         }
 
         return new PasswordReport(score, strengthLevel, suggestions);

@@ -1,5 +1,10 @@
+E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\exception\GlobalExceptionHandler.java
 E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\service\impl\PasswordServiceImpl.java
 E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\PasswordvalidatorApplication.java
+E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\controller\PasswordController.java
+E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\exception\InvalidPasswordInputException.java
 E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\service\PasswordService.java
+E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\dto\PasswordReportDto.java
 E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\util\PasswordValidator.java
 E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\model\PasswordReport.java
+E:\Java HAckathon\Password Strength & Policy Validator\src\main\java\com\tarun\passwordvalidator\dto\PasswordRequestDto.java

@@ -1,0 +1,5 @@
+# Created at 2026-07-04T05:02:22.696
+Boot Manifest-JAR contains absolute paths in classpath 'E:\Java HAckathon\Password Strength & Policy Validator\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+'other' has different root
+
