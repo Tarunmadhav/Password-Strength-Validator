@@ -1,93 +1,36 @@
-# Password Strength & Policy Validator
+# Password Strength & Policy Validator (Spring Boot Version)
 
-A console-based Java 17 application that validates password strength against a configurable policy and provides a strength score with feedback.
+This is a Spring Boot 3.x console application that validates password strength and provides feedback.
 
-## Features
+## Running the Application
 
-- Validates passwords against multiple criteria:
-  - Minimum length
-  - Uppercase and lowercase letters
-  - Digits
-  - Special characters
-  - Username inclusion
-  - Common passwords
-  - Repeated characters (3+ identical in a row)
-  - Sequential characters (3+ consecutive like abc or 123)
-- Scores passwords on a scale of 0-100
-- Rates password strength as WEAK, MEDIUM, or STRONG
-- Provides specific suggestions for improvement
-- Simple console interface for continuous testing
-
-## Requirements
-
-- Java Development Kit (JDK) 17 or higher
-
-## Compilation and Execution
-
-Since this project uses plain Java 17 with no external dependencies or build tools, you can compile and run it directly with `javac` and `java`.
-
-### Step 1: Compile all Java files
-
-From the project root directory:
+To run the application, use the following Maven command:
 
 ```bash
-javac *.java
+mvn spring-boot:run
 ```
 
-### Step 2: Run the application
+The application will start and prompt you to enter a username and password. Enter 'quit' to exit.
 
-```bash
-java Main
-```
+## Project Structure
 
-### Usage
+- `com.tarun.passwordvalidator.PasswordvalidatorApplication`: The main Spring Boot application class that implements `CommandLineRunner`.
+- `com.tarun.passwordvalidator.model.PasswordReport`: Model class representing the password validation report.
+- `com.tarun.passwordvalidator.service.PasswordService`: Service interface for password validation.
+- `com.tarun.passwordvalidator.service.impl.PasswordServiceImpl`: Implementation of the password validation service.
+- `com.tarun.passwordvalidator.util.PasswordValidator`: Utility class containing password validation rules (marked as `@Component`).
 
-1. The program will prompt you to enter a username.
-2. Then it will prompt for a password.
-3. It will display a password strength report including:
-   - Score (out of 100)
-   - Strength level (WEAK/MEDIUM/STRONG)
-   - Specific suggestions for improvement (if any)
-4. To exit, type `quit` at either the username or password prompt.
+## Inversion of Control (IoC) and Dependency Injection (DI)
 
-## Example
-
-```
-=== Password Strength & Policy Validator ===
-Enter 'quit' to exit.
-
-Enter username: john
-Enter password: Password123!
-
-==== Password Strength Report ====
-Score : 80 / 100
-Strength : STRONG
-Suggestions :
-  - (none - password is strong!)
-===================================
-```
-
-## Code Structure
-
-- `PasswordValidator.java`: Contains validation methods for each password rule.
-- `PasswordScorer.java`: Combines validation results into a 0-100 score and strength rating.
-- `PasswordReport.java`: Holds the score, strength level, and suggestions, and formats the output.
-- `Main.java`: Contains the main method with the console loop.
+In this Spring Boot version, objects are created and managed by the Spring container. The `PasswordvalidatorApplication` class receives its dependencies (`PasswordService`) via constructor injection, eliminating the need for manual `new` calls. This demonstrates the Inversion of Control principle, where the framework (Spring) controls the lifecycle and wiring of objects.
 
 ## Notes
 
-- The password policy used in `Main.java` requires:
-  - Minimum length of 8 characters
-  - At least one uppercase letter
-  - At least one lowercase letter
-  - At least one digit
-  - At least one special character
-  - Username not allowed in password
-  - Common passwords not allowed
-  - No repeated characters (3+ identical in a row)
-  - No sequential characters (3+ consecutive like abc or 123)
-- You can adjust the policy requirements by modifying the `PasswordPolicy` constructor in `Main.java`.
+- Ensure you have Maven and Java 17 installed.
+- The first run will download dependencies from Maven Central, which requires an internet connection.
+- The console output format is identical to the Phase 1 console application, except for the Spring Boot startup banner.
 
-## License
+## Acceptance Criteria
 
-This project is for educational purposes.
+- `mvn spring-boot:run` boots cleanly and reproduces the same Score/Strength/Suggestions output as Phase 1 for the same inputs.
+- No manual `new PasswordServiceImpl(...)` anywhere in the code — everything is container-managed.

@@ -1,17 +1,19 @@
+package com.tarun.passwordvalidator.service.impl;
+
+import com.tarun.passwordvalidator.model.PasswordReport;
+import com.tarun.passwordvalidator.model.PasswordReport.StrengthLevel;
+import com.tarun.passwordvalidator.service.PasswordService;
+import com.tarun.passwordvalidator.util.PasswordValidator;
+import org.springframework.stereotype.Service;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Scores password strength based on validation results.
+ * Service implementation for password validation and scoring.
  */
-public class PasswordScorer {
-
-    /**
-     * Strength levels for passwords.
-     */
-    public enum StrengthLevel {
-        WEAK, MEDIUM, STRONG
-    }
+@Service
+public class PasswordServiceImpl implements PasswordService {
 
     // Weights for different criteria (must sum to 100)
     private static final int LENGTH_WEIGHT = 15;
@@ -26,39 +28,18 @@ public class PasswordScorer {
 
     private final PasswordValidator validator;
 
-    public PasswordScorer() {
-        this.validator = new PasswordValidator();
+    public PasswordServiceImpl(PasswordValidator validator) {
+        this.validator = validator;
     }
 
-    /**
-     * Determines the strength level based on the score.
-     * @param score the score (0-100)
-     * @return the strength level (WEAK, MEDIUM, or STRONG)
-     */
-    public StrengthLevel getStrengthLevel(int score) {
-        if (score < 60) {
-            return StrengthLevel.WEAK;
-        } else if (score < 80) {
-            return StrengthLevel.MEDIUM;
-        } else {
-            return StrengthLevel.STRONG;
-        }
-    }
-
-    /**
-     * Scores a password based on various strength criteria.
-     *
-     * @param password the password to score
-     * @param username the username to check against (for username-in-password rule)
-     * @return a PasswordReport containing the score, strength level, and suggestions
-     */
-    public PasswordReport scorePassword(String password, String username) {
+    @Override
+    public PasswordReport validate(String password, String username) {
         if (password == null) {
             password = "";
         }
 
         int score = 0;
-        List<String> suggestions = new ArrayList<>();
+        List<String> suggestions = new ArrayList<String>();
 
         // Check length (minimum 8 chars, but longer is better)
         int length = password.length();
@@ -136,13 +117,13 @@ public class PasswordScorer {
         score = Math.min(score, 100);
 
         // Determine strength level
-        StrengthLevel strengthLevel;
+        PasswordReport.StrengthLevel strengthLevel;
         if (score >= 80) {
-            strengthLevel = StrengthLevel.STRONG;
+            strengthLevel = PasswordReport.StrengthLevel.STRONG;
         } else if (score >= 60) {
-            strengthLevel = StrengthLevel.MEDIUM;
+            strengthLevel = PasswordReport.StrengthLevel.MEDIUM;
         } else {
-            strengthLevel = StrengthLevel.WEAK;
+            strengthLevel = PasswordReport.StrengthLevel.WEAK;
         }
 
         return new PasswordReport(score, strengthLevel, suggestions);

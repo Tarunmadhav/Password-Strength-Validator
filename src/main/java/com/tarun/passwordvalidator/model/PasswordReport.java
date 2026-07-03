@@ -1,3 +1,5 @@
+package com.tarun.passwordvalidator.model;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +9,7 @@ import java.util.List;
 public class PasswordReport {
 
     private int score;
-    private PasswordScorer.StrengthLevel strengthLevel;
+    private StrengthLevel strengthLevel;
     private List<String> suggestions;
 
     /**
@@ -16,7 +18,7 @@ public class PasswordReport {
      * @param strengthLevel the strength level (WEAK, MEDIUM, STRONG)
      * @param suggestions list of suggestions for improvement
      */
-    public PasswordReport(int score, PasswordScorer.StrengthLevel strengthLevel, List<String> suggestions) {
+    public PasswordReport(int score, StrengthLevel strengthLevel, List<String> suggestions) {
         this.score = score;
         this.strengthLevel = strengthLevel;
         this.suggestions = suggestions;
@@ -30,11 +32,11 @@ public class PasswordReport {
         this.score = score;
     }
 
-    public PasswordScorer.StrengthLevel getStrengthLevel() {
+    public StrengthLevel getStrengthLevel() {
         return strengthLevel;
     }
 
-    public void setStrengthLevel(PasswordScorer.StrengthLevel strengthLevel) {
+    public void setStrengthLevel(StrengthLevel strengthLevel) {
         this.strengthLevel = strengthLevel;
     }
 
@@ -62,5 +64,12 @@ public class PasswordReport {
         }
         sb.append("===================================\n");
         return sb.toString();
+    }
+
+    /**
+     * Enum for password strength levels.
+     */
+    public enum StrengthLevel {
+        WEAK, MEDIUM, STRONG
     }
 }

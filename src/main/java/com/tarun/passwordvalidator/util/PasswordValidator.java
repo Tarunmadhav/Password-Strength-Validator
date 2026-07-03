@@ -1,9 +1,13 @@
+package com.tarun.passwordvalidator.util;
+
+import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * Validates password strength based on various criteria.
  */
+@Component
 public class PasswordValidator {
 
     private static final Set<String> COMMON_PASSWORDS = new HashSet<>();
