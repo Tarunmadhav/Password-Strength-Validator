@@ -3,10 +3,8 @@ package com.tarun.passwordvalidator.service.impl;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.tarun.passwordvalidator.dto.PasswordReportDto;
 import com.tarun.passwordvalidator.exception.InvalidPasswordInputException;
-import com.tarun.passwordvalidator.model.PasswordReport;
-import com.tarun.passwordvalidator.model.PasswordReport.StrengthLevel;
-import com.tarun.passwordvalidator.service.PasswordService;
 import com.tarun.passwordvalidator.util.PasswordValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +35,7 @@ class PasswordServiceImplTest {
         String password = "Str0ngP@ssw0rd!";
         String username = "john";
 
-        // Mock validator responses for a strong password
+        // Mock validator responses for a strong password (all pass)
         when(passwordValidator.validateLength(password)).thenReturn(null);
         when(passwordValidator.validateUppercase(password)).thenReturn(null);
         when(passwordValidator.validateLowercase(password)).thenReturn(null);
@@ -47,15 +45,17 @@ class PasswordServiceImplTest {
         when(passwordValidator.validateRepeatedChars(password)).thenReturn(null);
         when(passwordValidator.validateSequentialChars(password)).thenReturn(null);
         when(passwordValidator.validateUsernameSimilarity(password, username)).thenReturn(null);
-        when(passwordValidator.lengthBonus(password)).thenReturn(5); // length 15 -> bonus 5
+        when(passwordValidator.validateWhitespace(password)).thenReturn(null);
+        // Note: lengthBonus is not used in the new scoring, so we don't mock it
 
         // Act
-        PasswordReport result = passwordService.validate(password, username);
+        PasswordReportDto result = passwordService.validate(password, username);
 
         // Assert
         assertNotNull(result);
-        assertEquals(StrengthLevel.STRONG, result.getStrengthLevel());
-        assertTrue(result.getScore() >= 80); // Should be strong
+        // Expected score: 100 (all pass, length>=12 -> no deduction for length)
+        assertEquals(100, result.getScore());
+        assertEquals("VERY STRONG", result.getStrengthLevel());
         assertTrue(result.getSuggestions().isEmpty());
     }
 
@@ -75,15 +75,21 @@ class PasswordServiceImplTest {
         when(passwordValidator.validateRepeatedChars(password)).thenReturn(null);
         when(passwordValidator.validateSequentialChars(password)).thenReturn(null);
         when(passwordValidator.validateUsernameSimilarity(password, username)).thenReturn(null);
-        when(passwordValidator.lengthBonus(password)).thenReturn(0);
+        when(passwordValidator.validateWhitespace(password)).thenReturn(null); // no whitespace
 
         // Act
-        PasswordReport result = passwordService.validate(password, username);
+        PasswordReportDto result = passwordService.validate(password, username);
 
         // Assert
         assertNotNull(result);
-        assertEquals(StrengthLevel.WEAK, result.getStrengthLevel());
-        assertTrue(result.getScore() < 60); // Should be weak
+        // Expected score:
+        //   Failed rules: Length, Uppercase, Digit, Special
+        //   Weights: Length=20, Uppercase=10, Digit=10, Special=15 -> total failed weight = 55
+        //   Raw weight total = 135 -> scale = 100/135
+        //   Deduction = 55 * (100/135) = 40.7407 -> score = 100 - 40.7407 = 59.2593 -> rounded to 59
+        //   Strength level: 59 -> WEAK (41-60)
+        assertEquals(59, result.getScore());
+        assertEquals("WEAK", result.getStrengthLevel());
         assertFalse(result.getSuggestions().isEmpty());
         assertTrue(result.getSuggestions().contains("Password must be at least 8 characters long"));
         assertTrue(result.getSuggestions().contains("Add at least one uppercase letter"));
@@ -106,16 +112,26 @@ class PasswordServiceImplTest {
         when(passwordValidator.validateCommonPassword(password)).thenReturn(null);
         when(passwordValidator.validateRepeatedChars(password)).thenReturn(null);
         when(passwordValidator.validateSequentialChars(password)).thenReturn(null);
+        when(passwordValidator.validateWhitespace(password)).thenReturn(null);
         when(passwordValidator.validateUsernameSimilarity(password, username)).thenReturn("Avoid using your username or a variant of it within your password");
-        when(passwordValidator.lengthBonus(password)).thenReturn(0); // length 8 -> no bonus
 
         // Act
-        PasswordReport result = passwordService.validate(password, username);
+        PasswordReportDto result = passwordService.validate(password, username);
 
         // Assert
         assertNotNull(result);
-        // Should still be strong or moderate depending on score, but should have the username suggestion
+        // Expected score without username override:
+        //   All rules pass except username -> failed weight = 10
+        //   Deduction = 10 * (100/135) = 7.4074 -> score = 92.5926
+        //   Then apply username override: score = 92.5926 * 0.3 = 27.7778 -> capped at 20
+        //   Final score = 20
+        //   Strength level: 20 -> CRITICAL (0-20)
+        assertEquals(20, result.getScore());
+        assertEquals("CRITICAL", result.getStrengthLevel());
         assertTrue(result.getSuggestions().contains("Avoid using your username or a variant of it within your password"));
+        // Check that the username override warning is present in the controller?
+        // But note: the DTO does not have a field for the warning. The warning is added in the controller based on the score.
+        // So we don't check it here.
     }
 
     @Test

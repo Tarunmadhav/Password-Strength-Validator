@@ -3,13 +3,29 @@ package com.tarun.passwordvalidator.util;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Component;
+
 /**
  * Validates password strength based on various criteria.
  * Each rule returns a suggestion string if the rule fails, or null if passes.
+ * Each rule also has a defined weight (points deducted if the rule fails).
  */
-
 @Component
 public class PasswordValidator {
+
+    // Weights (points deducted if rule fails)
+    // Note: These weights are scaled so that the sum of all weights (excluding username) is 100.
+    // Original weights: Length 20, Uppercase 10, Lowercase 10, Digit 10, Special 15, Common 30, Sequential 10, Repeated 10, Whitespace 10 -> sum=125
+    // Scaled by 100/125 = 0.8 -> Length 16, Uppercase 8, Lowercase 8, Digit 8, Special 12, Common 24, Sequential 8, Repeated 8, Whitespace 8
+    public static final int WEIGHT_LENGTH = 16;      // for length<8: deduct 16; for 8<=length<12: deduct 8; for >=12: deduct 0
+    public static final int WEIGHT_UPPERCASE = 8;    // at least one uppercase
+    public static final int WEIGHT_LOWERCASE = 8;    // at least one lowercase
+    public static final int WEIGHT_DIGIT = 8;        // at least one digit
+    public static final int WEIGHT_SPECIAL = 12;     // at least one special char from allowed set
+    public static final int WEIGHT_COMMON = 24;      // not a common password
+    public static final int WEIGHT_SEQUENTIAL = 8;   // no 3+ consecutive sequential chars
+    public static final int WEIGHT_REPEATED = 8;     // no 3+ identical consecutive chars
+    public static final int WEIGHT_USERNAME = 0;     // username override is handled separately (multiplicative penalty)
+    public static final int WEIGHT_WHITESPACE = 8;   // no whitespace (leading, trailing, internal)
 
     private static final Set<String> COMMON_PASSWORDS = new HashSet<>();
     static {
@@ -57,9 +73,9 @@ public class PasswordValidator {
     };
 
     /**
-     * Checks if password meets minimum length requirement (>=8).
+     * Checks password length.
      * @param password the password to check
-     * @return null if length >= 8, otherwise suggestion to increase length
+     * @return null if length >= 8 (pass), otherwise suggestion to increase length
      */
     public String validateLength(String password) {
         if (password != null && password.length() >= 8) {
@@ -117,20 +133,22 @@ public class PasswordValidator {
     }
 
     /**
-     * Checks if password contains at least one special character.
-     * Special characters are defined as non-alphanumeric.
+     * Checks if password contains at least one special character from the allowed set.
+     * Allowed special characters: !@#$%^&*()-_=+[]{};:,.<>?
      * @param password the password to check
-     * @return null if contains special char, otherwise suggestion
+     * @return null if contains valid special char, otherwise suggestion
      */
     public String validateSpecialChar(String password) {
-        if (password != null) {
-            for (char c : password.toCharArray()) {
-                if (!Character.isLetterOrDigit(c)) {
-                    return null;
-                }
+        if (password == null) {
+            return "Add at least one special character from: !@#$%^&*()-_=+[]{};:,.<>?";
+        }
+        String specialChars = "!@#$%^&*()-_=+[]{};:,.<>?";
+        for (char c : password.toCharArray()) {
+            if (specialChars.indexOf(c) >= 0) {
+                return null;
             }
         }
-        return "Add at least one special character (e.g., !@#$%^&*)";
+        return "Add at least one special character from: !@#$%^&*()-_=+[]{};:,.<>?";
     }
 
     /**
@@ -236,6 +254,31 @@ public class PasswordValidator {
     }
 
     /**
+     * Checks if password contains any whitespace (leading, trailing, or internal).
+     * @param password the password to check
+     * @return null if no whitespace, otherwise suggestion
+     */
+    public String validateWhitespace(String password) {
+        if (password == null) {
+            return "Password cannot be null";
+        }
+        if (password.trim().isEmpty()) {
+            return "Password cannot be only whitespace";
+        }
+        if (password.contains(" ")) {
+            return "Password must not contain any spaces";
+        }
+        // Check for other whitespace characters like tab, newline
+        for (int i = 0; i < password.length(); i++) {
+            char c = password.charAt(i);
+            if (Character.isWhitespace(c)) {
+                return "Password must not contain any whitespace characters";
+            }
+        }
+        return null;
+    }
+
+    /**
      * Returns the length of the longest common substring between two strings.
      * @param s1 first string
      * @param s2 second string
@@ -261,7 +304,9 @@ public class PasswordValidator {
      * Returns bonus points for length >=12 and >=16.
      * @param password the password to check
      * @return bonus points (0, 5, or 10)
+     * @deprecated This method is no longer used in the new scoring system.
      */
+    @Deprecated
     public int lengthBonus(String password) {
         if (password == null) {
             return 0;

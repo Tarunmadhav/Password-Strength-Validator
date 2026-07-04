@@ -2,6 +2,7 @@ com\tarun\passwordvalidator\exception\GlobalExceptionHandler.class
 com\tarun\passwordvalidator\util\PasswordValidator.class
 com\tarun\passwordvalidator\model\PasswordReport$StrengthLevel.class
 com\tarun\passwordvalidator\controller\PasswordController.class
+com\tarun\passwordvalidator\dto\RuleResult.class
 com\tarun\passwordvalidator\dto\PasswordRequestDto.class
 com\tarun\passwordvalidator\exception\InvalidPasswordInputException.class
 com\tarun\passwordvalidator\dto\PasswordReportDto.class

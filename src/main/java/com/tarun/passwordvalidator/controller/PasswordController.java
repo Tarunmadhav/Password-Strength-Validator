@@ -40,18 +40,12 @@ public class PasswordController {
         String password = passwordRequestDto.getPassword();
 
         // Call service to get report
-        var report = passwordService.validate(password, username);
-
-        // Convert to DTO for view
-        PasswordReportDto reportDto = new PasswordReportDto();
-        reportDto.setScore(report.getScore());
-        reportDto.setStrengthLevel(report.getStrengthLevel().toString());
-        reportDto.setSuggestions(report.getSuggestions());
+        PasswordReportDto reportDto = passwordService.validate(password, username);
 
         model.addAttribute("report", reportDto);
         model.addAttribute("username", username);
         model.addAttribute("password", password); // optional, for showing in feedback
 
-        return "result";
+        return "index"; // Stay on the same page
     }
 }

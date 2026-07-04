@@ -73,9 +73,9 @@ class PasswordValidatorTest {
 
     @Test
     void testSpecialCharInvalid() {
-        assertEquals("Add at least one special character (e.g., !@#$%^&*)", validator.validateSpecialChar("abcdefgh"));
-        assertEquals("Add at least one special character (e.g., !@#$%^&*)", validator.validateSpecialChar(""));
-        assertEquals("Add at least one special character (e.g., !@#$%^&*)", validator.validateSpecialChar(null));
+        assertEquals("Add at least one special character from: !@#$%^&*()-_=+[]{};:,.<>?", validator.validateSpecialChar("abcdefgh"));
+        assertEquals("Add at least one special character from: !@#$%^&*()-_=+[]{};:,.<>?", validator.validateSpecialChar(""));
+        assertEquals("Add at least one special character from: !@#$%^&*()-_=+[]{};:,.<>?", validator.validateSpecialChar(null));
     }
 
     @Test
@@ -148,20 +148,20 @@ class PasswordValidatorTest {
 
     @Test
     void testUsernameSimilarityFuzzy() {
-        // We'll define fuzzy as having at least 50% longest common substring.
-        // For password "tarun123" and username "tarun": lcs = "tarun" (5) -> 5/8 = 0.625 >= 0.5 -> should trigger.
-        assertEquals("Avoid using your username or a variant of it within your password", validator.validateUsernameSimilarity("tarun123", "tarun"));
-        // Another: "john123" and "john" -> lcs="john" (4) -> 4/7 ≈ 0.57 -> trigger.
-        assertEquals("Avoid using your username or a variant of it within your password", validator.validateUsernameSimilarity("john123", "john"));
-        // Edge: exactly 50%: password length 6, lcs 3 -> "abc123" and "abc" -> lcs=3 -> 3/6=0.5 -> trigger.
-        assertEquals("Avoid using your username or a variant of it within your password", validator.validateUsernameSimilarity("abc123", "abc"));
-        // Below 50%: password length 8, lcs 3 -> 3/8=0.375 -> no trigger.
-        assertNull(validator.validateUsernameSimilarity("abcdefgh", "abc")); // lcs=3 -> 3/8=0.375
+        // We'll define fuzzy as having at least 50% longest common substring, but NOT a substring relation.
+        // Example: password "abcfgh", username "abczz" -> LCS = "abc" (3), similarity = 3/6 = 0.5
+        assertEquals("Avoid using your username or a variant of it within your password", validator.validateUsernameSimilarity("abcfgh", "abczz"));
+        // Another: "abcdxy" and "abcdef" -> LCS = "abcd" (4), length 6 -> 4/6≈0.66
+        assertEquals("Avoid using your username or a variant of it within your password", validator.validateUsernameSimilarity("abcdxy", "abcdef"));
+        // Edge: exactly 50%: password length 6, lcs 3 -> avoid substring case, use "abcfgh", "abczz" already covers.
+        // Below 50%: password length 8, lcs 2 -> 2/8=0.25 -> no trigger.
+        assertNull(validator.validateUsernameSimilarity("abcdefgh", "abx")); // lcs=2 -> 2/8=0.25
         // No match at all
         assertNull(validator.validateUsernameSimilarity("xxxxxxxx", "yyyy"));
         // Exact match already covered.
     }
 
+    // Note: The lengthBonus method is deprecated and not used in the new scoring, but we keep the test for completeness.
     @Test
     void testLengthBonus() {
         assertEquals(0, validator.lengthBonus(null));
